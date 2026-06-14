@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghi Chú</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --accent: #c8f060;
+    --accent-dim: #9bba3e;
+    --text: #e8e8e8;
+    --text-muted: #777;
+    --text-dim: #444;
+    --danger: #ff5a5a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    padding: 24px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .note-count {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .tagline {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  main {
+    width: 100%;
+    max-width: 860px;
+    padding: 0 24px 80px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 11px 14px 11px 38px;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--text-dim); }
+
+  .clear-search {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px;
+    line-height: 1;
+    display: none;
+    transition: color 0.15s;
+  }
+  .clear-search:hover { color: var(--accent); }
+  .clear-search.visible { display: block; }
+
+  .sort-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 11px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+  }
+  .sort-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── TAG FILTER BAR ── */
+  .tag-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    min-height: 0;
+    transition: margin 0.2s;
+  }
+  .tag-bar:empty { margin-bottom: 0; }
+
+  .tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 99px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .tag-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .tag-pill.active {
+    background: rgba(200,240,96,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .tag-pill .tag-count {
+    font-size: 0.6rem;
+    opacity: 0.6;
+    margin-left: 2px;
+  }
+  .tag-pill-clear {
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 99px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+  }
+  .tag-pill-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* Add note row */
+  .add-row {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+    border-bottom: 1px solid var(--accent-dim);
+    transition: border-color 0.2s;
+    overflow: hidden;
+  }
+
+  .add-row:focus-within {
+    border-color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .add-plus {
+    width: 44px;
+    text-align: center;
+    font-size: 1rem;
+    color: var(--accent);
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .add-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    padding: 14px 10px;
+    outline: none;
+    caret-color: var(--accent);
+  }
+
+  /* ── ADD BUTTON with ripple ── */
+  .add-btn {
+    position: relative;
+    overflow: hidden;
+    background: var(--accent);
+    border: none;
+    color: #0f0f0f;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0 22px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .add-btn:hover { background: #d8f870; }
+
+  /* Ripple element */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.25);
+    transform: scale(0);
+    animation: rippleAnim 0.55s linear;
+    pointer-events: none;
+  }
+  @keyframes rippleAnim {
+    to { transform: scale(4); opacity: 0; }
+  }
+
+  /* ── BURST PARTICLES ── */
+  .particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9000;
+    width: 8px;
+    height: 8px;
+    animation: particleFly var(--dur, 0.7s) ease-out forwards;
+  }
+  @keyframes particleFly {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  }
+
+  /* ── STAMP animation on the add-row ── */
+  @keyframes stampPop {
+    0%   { transform: scaleY(1); }
+    30%  { transform: scaleY(0.88) scaleX(1.04); }
+    60%  { transform: scaleY(1.06) scaleX(0.97); }
+    80%  { transform: scaleY(0.97) scaleX(1.01); }
+    100% { transform: scaleY(1) scaleX(1); }
+  }
+  .add-row.stamp { animation: stampPop 0.4s cubic-bezier(.36,.07,.19,.97); }
+
+  /* Random spotlight row */
+  .note-row.spotlight {
+    background: linear-gradient(90deg, rgba(200,240,96,0.07) 0%, transparent 100%);
+    border-left: 2px solid var(--accent);
+  }
+  .spotlight-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--accent-dim);
+    text-transform: uppercase;
+    padding: 4px 14px 0;
+    opacity: 0.8;
+  }
+
+  /* Notes table */
+  .notes-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 1fr 44px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .th {
+    padding: 8px 14px;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .th:last-child { text-align: center; padding: 8px 4px; }
+
+  /* Note row */
+  .note-row {
+    display: grid;
+    grid-template-columns: 1fr 44px;
+    align-items: start;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    animation: slideIn 0.22s cubic-bezier(.16,1,.3,1);
+  }
+
+  .note-row:last-child { border-bottom: none; }
+  .note-row:hover { background: var(--surface2); }
+  .note-row.editing { background: #1c1f15; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px) scaleY(0.92); }
+    to   { opacity: 1; transform: translateY(0) scaleY(1); }
+  }
+
+  .note-row.removing {
+    animation: slideOut 0.2s ease forwards;
+  }
+  @keyframes slideOut {
+    to { opacity: 0; transform: translateX(14px); }
+  }
+
+  /* Text + date + tags stacked */
+  .row-body {
+    display: flex;
+    flex-direction: column;
+    padding: 11px 14px 10px;
+    min-width: 0;
+  }
+
+  .row-text {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--text);
+    word-break: break-word;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .row-text[contenteditable="true"] {
+    caret-color: var(--accent);
+    cursor: text;
+  }
+
+  .row-text .highlight em {
+    background: rgba(200, 240, 96, 0.2);
+    color: var(--accent);
+    font-style: normal;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  /* inline #tag highlight inside note text */
+  .row-text .inline-tag {
+    color: var(--accent-dim);
+    font-size: 0.82em;
+    opacity: 0.85;
+  }
+
+  .row-date {
+    font-size: 0.63rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── TAG CHIPS on each row ── */
+  .row-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .row-tag {
+    display: inline-block;
+    background: rgba(200,240,96,0.08);
+    border: 1px solid rgba(200,240,96,0.2);
+    color: var(--accent-dim);
+    font-size: 0.62rem;
+    padding: 2px 7px;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .row-tag:hover {
+    background: rgba(200,240,96,0.18);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .row-tag.active-filter {
+    background: rgba(200,240,96,0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Actions */
+  .row-actions {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 10px 4px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .note-row:hover .row-actions,
+  .note-row.editing .row-actions { opacity: 1; }
+
+  .btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    padding: 5px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+  }
+  .btn-icon:hover { color: var(--danger); background: rgba(255,90,90,0.08); }
+  .btn-icon.save:hover { color: var(--accent); background: rgba(200,240,96,0.08); }
+
+  /* Empty / no-results */
+  .empty-state, .no-results {
+    text-align: center;
+    padding: 56px 20px;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    display: none;
+  }
+  .empty-state.visible, .no-results.visible { display: block; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 14px; opacity: 0.3; }
+  .empty-msg { color: var(--text-muted); }
+
+  /* Stats */
+  .stats-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 0;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .stats-bar b { color: var(--accent); font-weight: 500; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* ── TAG AUTOCOMPLETE DROPDOWN ── */
+  .add-row-wrap { position: relative; }
+  .tag-dropdown {
+    position: absolute;
+    left: 0; right: 0;
+    top: calc(100% + 4px);
+    background: var(--surface2);
+    border: 1px solid var(--accent-dim);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .tag-dropdown.open { display: block; }
+  .tag-drop-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--text);
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.12s, color 0.12s;
+    border-bottom: 1px solid var(--border);
+  }
+  .tag-drop-item:last-child { border-bottom: none; }
+  .tag-drop-item:hover, .tag-drop-item.selected {
+    background: rgba(200,240,96,0.1);
+    color: var(--accent);
+  }
+  .tag-drop-item .tdi-hash { color: var(--accent); font-size: 0.75rem; }
+  .tag-drop-item .tdi-count { margin-left: auto; font-size: 0.65rem; color: var(--accent-dim); }
+
+  /* ── RANDOM FILTER MODAL ── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: min(92vw, 380px);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    transform: translateY(12px);
+    transition: transform 0.2s;
+  }
+  .modal-backdrop.open .modal { transform: translateY(0); }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+  }
+  .modal-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .modal-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 280px;
+    padding: 2px;
+  }
+
+  .modal-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 99px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .modal-tag-chip:hover { border-color: var(--accent-dim); color: var(--text); }
+  .modal-tag-chip.on {
+    background: rgba(200,240,96,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .modal-tag-chip .chip-check { font-size: 0.65rem; opacity: 0; transition: opacity 0.15s; }
+  .modal-tag-chip.on .chip-check { opacity: 1; }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .modal-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    padding: 9px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .modal-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+  .modal-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0f0f0f;
+    font-weight: 500;
+  }
+  .modal-btn.primary:hover { background: #d8f870; }
+
+  .modal-empty {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  /* Spotlight label + settings gear */
+  .spotlight-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 14px 0;
+  }
+  .spotlight-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .spotlight-gear, .spotlight-refresh {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s, transform 0.35s;
+    line-height: 1;
+  }
+  .spotlight-gear:hover { color: var(--accent); }
+  .spotlight-refresh:hover { color: var(--accent); }
+  .spotlight-refresh.spinning {
+    transform: rotate(360deg);
+    transition: transform 0.4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── DELETE BY TAG ── */
+  .tag-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: 1px dashed rgba(255,90,90,0.35);
+    color: var(--danger);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 99px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    opacity: 0.65;
+    transition: all 0.15s;
+  }
+  .tag-delete-btn:hover {
+    opacity: 1;
+    background: rgba(255,90,90,0.1);
+    border-color: var(--danger);
+    border-style: solid;
+  }
+
+  /* Confirm modal */
+  .confirm-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 3000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .confirm-modal-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .confirm-modal {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--danger);
+    border-radius: 12px;
+    padding: 24px;
+    width: min(92vw, 340px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    transform: translateY(12px);
+    transition: transform 0.2s;
+  }
+  .confirm-modal-backdrop.open .confirm-modal { transform: translateY(0); }
+
+  .confirm-modal-icon { font-size: 1.8rem; text-align: center; }
+  .confirm-modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    color: var(--danger);
+    text-align: center;
+  }
+  .confirm-modal-desc {
+    font-size: 0.77rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    text-align: center;
+  }
+  .confirm-modal-desc b { color: var(--text); }
+  .confirm-modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .confirm-modal-actions .modal-btn { flex: 1; text-align: center; }
+  .modal-btn.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+    font-weight: 500;
+  }
+  .modal-btn.danger:hover { background: #ff7070; }
+
+  /* ── HIDDEN BRACKET CONTENT ── */
+  .hidden-bracket {
+    color: transparent;
+    background: var(--surface2);
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s, background 0.2s;
+    padding: 0 2px;
+    border: 1px solid var(--border);
+    font-size: 0.8em;
+    letter-spacing: 0;
+  }
+  .hidden-bracket::before {
+    content: '[…]';
+    color: var(--text-dim);
+    font-size: 0.85em;
+  }
+  .hidden-bracket.revealed {
+    color: var(--text);
+    background: rgba(200,240,96,0.07);
+    border-color: rgba(200,240,96,0.3);
+  }
+  .hidden-bracket.revealed::before {
+    content: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-row">
+    <h1>Ghi Chú</h1>
+    <span class="note-count" id="headerCount">0 ghi chú</span>
+  </div>
+
+</header>
+
+<main>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Tìm kiếm ghi chú hoặc #tag...">
+      <button class="clear-search" id="clearSearch" title="Xóa tìm kiếm">✕</button>
+    </div>
+    <button class="sort-btn" id="sortBtn">↕ Mới nhất</button>
+  </div>
+
+  <!-- Tag filter bar -->
+  <div class="tag-bar" id="tagBar"></div>
+
+  <div class="add-row-wrap">
+    <div class="add-row" id="addRow">
+      <div class="add-plus">+</div>
+      <input class="add-input" type="text" id="newNoteInput" placeholder="Nhập ghi chú, dùng #tag để gắn nhãn… rồi nhấn Enter" maxlength="500" autocomplete="off" autocorrect="off" autocapitalize="sentences">
+      <button class="add-btn" id="addBtn">THÊM</button>
+    </div>
+    <div class="tag-dropdown" id="tagDropdown"></div>
+  </div>
+
+  <div class="notes-table">
+    <div class="table-header">
+      <div class="th">NỘI DUNG</div>
+      <div class="th"></div>
+    </div>
+    <div id="notesList"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <div class="empty-msg">Chưa có ghi chú nào. Hãy thêm ghi chú đầu tiên!</div>
+    </div>
+    <div class="no-results" id="noResults">Không tìm thấy ghi chú nào phù hợp.</div>
+  </div>
+
+  <div class="stats-bar">
+    <span id="statsLeft">&nbsp;</span>
+    <span id="statsRight">&nbsp;</span>
+  </div>
+</main>
+
+<!-- Random filter modal -->
+<div class="modal-backdrop" id="randomModal">
+  <div class="modal">
+    <div class="modal-title">✦ Ghi chú ngẫu nhiên</div>
+    <div class="modal-desc">Chọn tag để chỉ hiện ghi chú ngẫu nhiên từ những tag đó. Nếu không chọn tag nào, sẽ lấy ngẫu nhiên từ tất cả ghi chú.</div>
+    <div class="modal-tag-list" id="modalTagList"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="modalCancel">Hủy</button>
+      <button class="modal-btn" id="modalSelectAll">Tất cả</button>
+      <button class="modal-btn primary" id="modalSave">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete by tag modal -->
+<div class="confirm-modal-backdrop" id="confirmDeleteTagModal">
+  <div class="confirm-modal">
+    <div class="confirm-modal-icon">🗑️</div>
+    <div class="confirm-modal-title">Xoá tất cả theo tag?</div>
+    <div class="confirm-modal-desc" id="confirmDeleteTagDesc"></div>
+    <div class="confirm-modal-actions">
+      <button class="modal-btn" id="confirmDeleteTagCancel">Huỷ</button>
+      <button class="modal-btn danger" id="confirmDeleteTagOk">Xoá hết</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'ghi_chu_app_v1';
+  const RANDOM_TAGS_KEY = 'ghi_chu_random_tags_v1';
+  let notes = [];
+  let sortNewest = true;
+  let editingId = null;
+  let activeTag = null;
+  let randomAllowedTags = null; // null = all, [] = all, Set of tag names = filtered
+  let currentSpotlightId = null; // track which note is spotlighted
+
+  const PARTICLE_COLORS = ['#c8f060','#f0e060','#60f0c8','#f06090','#60c8f0','#f0a060','#a060f0'];
+
+  // ── TAG HELPERS ──
+  const TAG_RE = /#([\wÀ-ỹà-ỹ]+)/gi;
+
+  function extractTags(text) {
+    const matches = [];
+    let m;
+    TAG_RE.lastIndex = 0;
+    while ((m = TAG_RE.exec(text)) !== null) matches.push(m[1].toLowerCase());
+    return [...new Set(matches)];
+  }
+
+  function getAllTags() {
+    const map = {};
+    notes.forEach(n => {
+      extractTags(n.text).forEach(t => { map[t] = (map[t] || 0) + 1; });
+    });
+    return map; // { tagName: count }
+  }
+
+  function renderTagHighlight(text, searchQ) {
+    // Escape first
+    let out = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // Wrap [bracket content] in hidden spans (before tag/search highlighting)
+    out = out.replace(/\[([^\]]+)\]/g, (match, inner) => {
+      return `<span class="hidden-bracket" title="Nhấp để hiện/ẩn" data-content="${inner.replace(/"/g,'&quot;')}">${inner}</span>`;
+    });
+    // Highlight #tags
+    out = out.replace(/#([\wÀ-ỹà-ỹ]+)/gi, '<span class="inline-tag">$1</span>');
+    // Highlight search query on top
+    if (searchQ) {
+      const eq = searchQ.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      out = out.replace(new RegExp(eq,'gi'), m => `<em>${m}</em>`);
+    }
+    return out;
+  }
+
+  function load() {
+    try { const r = localStorage.getItem(STORAGE_KEY); if (r) notes = JSON.parse(r); }
+    catch { notes = []; }
+    try {
+      const r = localStorage.getItem(RANDOM_TAGS_KEY);
+      randomAllowedTags = r ? new Set(JSON.parse(r)) : null;
+    } catch { randomAllowedTags = null; }
+  }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); }
+  function saveRandomTags() {
+    if (!randomAllowedTags || randomAllowedTags.size === 0) {
+      localStorage.removeItem(RANDOM_TAGS_KEY);
+    } else {
+      localStorage.setItem(RANDOM_TAGS_KEY, JSON.stringify([...randomAllowedTags]));
+    }
+  }
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+  function formatDate(ts) {
+    const d = new Date(ts), now = new Date(), diff = now - d;
+    if (diff < 60000) return 'Vừa xong';
+    if (diff < 3600000) return Math.floor(diff/60000) + ' phút trước';
+    if (diff < 86400000) return Math.floor(diff/3600000) + ' giờ trước';
+    const p = n => String(n).padStart(2,'0');
+    return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  function escHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function getSorted() { return [...notes].sort((a,b) => sortNewest ? b.ts-a.ts : a.ts-b.ts); }
+  function getQuery() { return document.getElementById('searchInput').value.trim(); }
+
+  // ── RENDER TAG BAR ──
+  function renderTagBar() {
+    const bar = document.getElementById('tagBar');
+    const tagMap = getAllTags();
+    const tags = Object.keys(tagMap).sort();
+    bar.innerHTML = '';
+    if (tags.length === 0) return;
+
+    tags.forEach(t => {
+      const pill = document.createElement('button');
+      pill.className = 'tag-pill' + (activeTag === t ? ' active' : '');
+      pill.innerHTML = `#${t} <span class="tag-count">${tagMap[t]}</span>`;
+      pill.addEventListener('click', () => {
+        activeTag = (activeTag === t) ? null : t;
+        render();
+      });
+      bar.appendChild(pill);
+    });
+
+    if (activeTag) {
+      const clr = document.createElement('button');
+      clr.className = 'tag-pill-clear';
+      clr.textContent = '✕ bỏ lọc';
+      clr.addEventListener('click', () => { activeTag = null; render(); });
+      bar.appendChild(clr);
+
+      // Delete all notes with this tag
+      const tagCount = tagMap[activeTag] || 0;
+      const delBtn = document.createElement('button');
+      delBtn.className = 'tag-delete-btn';
+      delBtn.innerHTML = `🗑 Xoá ${tagCount} ghi chú #${activeTag}`;
+      delBtn.addEventListener('click', () => openConfirmDeleteTag(activeTag, tagCount));
+      bar.appendChild(delBtn);
+    }
+  }
+
+  // ── BUILD NOTE ROW HTML ──
+  function buildNoteRow(note, isSpotlight, query) {
+    const isEditing = editingId === note.id;
+    const tags = extractTags(note.text);
+
+    const row = document.createElement('div');
+    row.className = 'note-row' + (isSpotlight ? ' spotlight' : '') + (isEditing ? ' editing' : '');
+    row.dataset.id = note.id;
+
+    let bodyText;
+    if (isEditing) {
+      bodyText = escHtml(note.text);
+    } else {
+      bodyText = renderTagHighlight(note.text, query);
+    }
+
+    const tagsHtml = '';
+
+    row.innerHTML = `
+      <div class="row-body">
+        <div class="row-text" contenteditable="${isEditing}"
+             data-id="${note.id}" tabindex="0"
+             title="Nhấp để chỉnh sửa">${bodyText}</div>
+        ${tagsHtml}
+        <div class="row-date">${formatDate(note.ts)}</div>
+      </div>
+      <div class="row-actions">
+        ${isEditing
+          ? `<button class="btn-icon save" data-action="save" data-id="${note.id}" title="Lưu">✓</button>`
+          : `<button class="btn-icon" data-action="delete" data-id="${note.id}" title="Xóa">✕</button>`
+        }
+      </div>`;
+    return row;
+  }
+
+  function render() {
+    const query = getQuery();
+    const list = document.getElementById('notesList');
+    const sorted = getSorted();
+
+    let filtered = sorted;
+    if (query) {
+      const q = query.toLowerCase();
+      filtered = sorted.filter(n =>
+        n.text.toLowerCase().includes(q) ||
+        extractTags(n.text).some(t => t.includes(q.replace(/^#/,'')))
+      );
+    }
+    if (activeTag) {
+      filtered = filtered.filter(n => extractTags(n.text).includes(activeTag));
+    }
+
+    document.getElementById('headerCount').textContent = notes.length + ' ghi chú';
+    document.getElementById('emptyState').classList.toggle('visible', notes.length === 0);
+    document.getElementById('noResults').classList.toggle('visible', notes.length > 0 && filtered.length === 0);
+
+    const isFiltered = filtered.length !== notes.length;
+    document.getElementById('statsLeft').innerHTML = isFiltered
+      ? `Tìm thấy <b>${filtered.length}</b> / ${notes.length} ghi chú${activeTag ? ` · tag <b>#${activeTag}</b>` : ''}`
+      : `Tổng cộng <b>${notes.length}</b> ghi chú`;
+
+    document.getElementById('statsRight').textContent = notes.length
+      ? 'Cập nhật: ' + formatDate(Math.max(...notes.map(n=>n.ts))) : '';
+
+    renderTagBar();
+    list.innerHTML = '';
+
+    // Random spotlight (only when no filter active)
+    if (!query && !activeTag && notes.length > 0) {
+      // Filter pool by randomAllowedTags if set
+      let pool = notes;
+      if (randomAllowedTags && randomAllowedTags.size > 0) {
+        pool = notes.filter(n => extractTags(n.text).some(t => randomAllowedTags.has(t)));
+      }
+      if (pool.length > 0) {
+        // Keep current spotlight if still in pool, otherwise pick new one
+        if (!currentSpotlightId || !pool.find(n => n.id === currentSpotlightId)) {
+          currentSpotlightId = pool[Math.floor(Math.random() * pool.length)].id;
+        }
+        const randomNote = pool.find(n => n.id === currentSpotlightId);
+
+        const header = document.createElement('div');
+        header.className = 'spotlight-header';
+        header.innerHTML = `
+          <span class="spotlight-label">✦ ghi chú ngẫu nhiên</span>
+          <div class="spotlight-controls">
+            <button class="spotlight-refresh" id="spotlightRefresh" title="Ghi chú ngẫu nhiên khác">⟳</button>
+            <button class="spotlight-gear" id="spotlightGear" title="Cài đặt ngẫu nhiên">⚙</button>
+          </div>`;
+        list.appendChild(header);
+        list.appendChild(buildNoteRow(randomNote, true, query));
+
+        const divider = document.createElement('div');
+        divider.style.cssText = 'border-top:1px solid var(--border);margin:0;';
+        list.appendChild(divider);
+
+        document.getElementById('spotlightGear').addEventListener('click', openRandomModal);
+        document.getElementById('spotlightRefresh').addEventListener('click', () => {
+          const btn = document.getElementById('spotlightRefresh');
+          // Pick a different note from pool
+          let newPool = pool.filter(n => n.id !== currentSpotlightId);
+          if (newPool.length === 0) newPool = pool; // only 1 note, keep same
+          currentSpotlightId = newPool[Math.floor(Math.random() * newPool.length)].id;
+          // Spin animation
+          btn.classList.remove('spinning');
+          void btn.offsetWidth;
+          btn.classList.add('spinning');
+          setTimeout(() => btn && btn.classList.remove('spinning'), 400);
+          render();
+        });
+      }
+    }
+
+    filtered.forEach(note => list.appendChild(buildNoteRow(note, false, query)));
+
+    if (editingId) {
+      const el = list.querySelector(`[data-id="${editingId}"].row-text`);
+      if (el) {
+        el.focus();
+        const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+        const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      }
+    }
+  }
+
+  /* ── BURST ANIMATION ── */
+  function burstParticles(originEl) {
+    const rect = originEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const count = 18;
+
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const angle = (i / count) * 360;
+      const dist = 55 + Math.random() * 70;
+      const rad = (angle * Math.PI) / 180;
+      const tx = Math.cos(rad) * dist;
+      const ty = Math.sin(rad) * dist;
+      const size = 5 + Math.random() * 7;
+      const dur = 0.45 + Math.random() * 0.35;
+      const color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
+
+      p.style.cssText = `
+        left:${cx - size/2}px; top:${cy - size/2}px;
+        width:${size}px; height:${size}px;
+        background:${color};
+        --tx:${tx}px; --ty:${ty}px; --dur:${dur}s;
+        box-shadow: 0 0 6px ${color};
+      `;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), dur * 1000 + 50);
+    }
+
+    const btn = document.getElementById('addBtn');
+    const br = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const size2 = Math.max(br.width, br.height);
+    ripple.style.cssText = `width:${size2}px;height:${size2}px;left:${(br.width-size2)/2}px;top:${(br.height-size2)/2}px`;
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+
+    const addRow = document.getElementById('addRow');
+    addRow.classList.remove('stamp');
+    void addRow.offsetWidth;
+    addRow.classList.add('stamp');
+    setTimeout(() => addRow.classList.remove('stamp'), 450);
+  }
+
+  function addNote(text) {
+    text = text.trim();
+    if (!text) return false;
+    notes.push({ id: genId(), text, ts: Date.now() });
+    save();
+    render();
+    return true;
+  }
+
+  function deleteNote(id) {
+    const row = document.querySelector(`.note-row[data-id="${id}"]`);
+    if (row) {
+      row.classList.add('removing');
+      setTimeout(() => { notes = notes.filter(n => n.id !== id); save(); render(); }, 200);
+    } else { notes = notes.filter(n => n.id !== id); save(); render(); }
+  }
+
+  function deleteByTag(tag) {
+    const toDelete = notes.filter(n => extractTags(n.text).includes(tag));
+    // Animate all matching rows then delete
+    toDelete.forEach(n => {
+      const row = document.querySelector(`.note-row[data-id="${n.id}"]`);
+      if (row) row.classList.add('removing');
+    });
+    setTimeout(() => {
+      notes = notes.filter(n => !extractTags(n.text).includes(tag));
+      activeTag = null;
+      save();
+      render();
+    }, 220);
+  }
+
+  function openConfirmDeleteTag(tag, count) {
+    document.getElementById('confirmDeleteTagDesc').innerHTML =
+      `Bạn sắp xoá <b>${count} ghi chú</b> có tag <b>#${tag}</b>.<br>Hành động này không thể hoàn tác.`;
+    const modal = document.getElementById('confirmDeleteTagModal');
+    modal.dataset.tag = tag;
+    modal.classList.add('open');
+  }
+
+  document.getElementById('confirmDeleteTagCancel').addEventListener('click', () => {
+    document.getElementById('confirmDeleteTagModal').classList.remove('open');
+  });
+
+  document.getElementById('confirmDeleteTagModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirmDeleteTagModal'))
+      document.getElementById('confirmDeleteTagModal').classList.remove('open');
+  });
+
+  document.getElementById('confirmDeleteTagOk').addEventListener('click', () => {
+    const tag = document.getElementById('confirmDeleteTagModal').dataset.tag;
+    document.getElementById('confirmDeleteTagModal').classList.remove('open');
+    if (tag) deleteByTag(tag);
+  });
+
+  let editingOriginal = null;
+
+  function startEdit(id) {
+    const note = notes.find(n => n.id === id);
+    editingOriginal = note ? note.text : null;
+    editingId = id;
+    render();
+  }
+
+  function saveEdit(id) {
+    const el = document.querySelector(`[data-id="${id}"].row-text`);
+    if (!el) { editingId = null; editingOriginal = null; render(); return; }
+    const t = el.innerText.trim();
+    if (t) {
+      const n = notes.find(n => n.id === id);
+      if (n) {
+        n.text = t;
+        if (t !== editingOriginal) n.ts = Date.now();
+      }
+      save();
+    }
+    editingId = null; editingOriginal = null; render();
+  }
+
+  function cancelEdit() { editingId = null; editingOriginal = null; render(); }
+
+  // Delegated list events
+  document.getElementById('notesList').addEventListener('click', e => {
+    // Toggle hidden bracket content
+    const bracket = e.target.closest('.hidden-bracket');
+    if (bracket) {
+      bracket.classList.toggle('revealed');
+      e.stopPropagation();
+      return;
+    }
+
+    // Tag chip click → filter by tag
+    const tagChip = e.target.closest('.row-tag');
+    if (tagChip) {
+      const t = tagChip.dataset.tag;
+      activeTag = (activeTag === t) ? null : t;
+      render();
+      return;
+    }
+
+    const action = e.target.dataset.action, id = e.target.dataset.id;
+    if (action === 'delete') { deleteNote(id); return; }
+    if (action === 'save') { saveEdit(id); return; }
+    const cell = e.target.closest('.row-text');
+    if (cell) {
+      const cid = cell.dataset.id;
+      if (editingId !== cid) { if (editingId) saveEdit(editingId); startEdit(cid); }
+    }
+  });
+
+  document.getElementById('notesList').addEventListener('keydown', e => {
+    const cell = e.target.closest('.row-text'); if (!cell) return;
+    const id = cell.dataset.id;
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(id); }
+    if (e.key === 'Escape') cancelEdit();
+  });
+
+  // Add note
+  const newInput = document.getElementById('newNoteInput');
+  const addBtn = document.getElementById('addBtn');
+
+  function handleAdd() {
+    const ok = addNote(newInput.value);
+    if (ok) {
+      burstParticles(addBtn);
+      newInput.value = '';
+    }
+    newInput.focus();
+  }
+
+  addBtn.addEventListener('click', handleAdd);
+  newInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (tagDropdown.classList.contains('open')) {
+        e.preventDefault();
+        const first = tagDropdown.querySelector('.tag-drop-item');
+        if (first) {
+          // extract tag name: strip leading # and trailing count digits
+          const raw = first.innerText.replace(/\s*\d+\s*$/, '').replace(/^#/, '').trim();
+          applyTag(raw);
+        }
+      } else {
+        handleAdd();
+      }
+    }
+  });
+
+  // ── TAG AUTOCOMPLETE ──
+  const tagDropdown = document.getElementById('tagDropdown');
+  let dropSelectedIdx = -1;
+  let pendingTagMatches = []; // current dropdown matches
+
+  function getTagQuery(val) {
+    // Find last # in the value and return what's typed after it
+    const m = val.match(/#([\wÀ-ỹà-ỹ]*)$/i);
+    return m ? m[1].toLowerCase() : null;
+  }
+
+  function closeDropdown() {
+    tagDropdown.classList.remove('open');
+    tagDropdown.innerHTML = '';
+    dropSelectedIdx = -1;
+    pendingTagMatches = [];
+  }
+
+  function applyTag(tag) {
+    const val = newInput.value;
+    const replaced = val.replace(/#([\wÀ-ỹà-ỹ]*)$/i, '#' + tag.toLowerCase() + ' ');
+    newInput.value = replaced;
+    closeDropdown();
+    newInput.focus();
+    // Move cursor to end so input scrolls to show inserted text
+    const len = newInput.value.length;
+    newInput.setSelectionRange(len, len);
+    newInput.scrollLeft = newInput.scrollWidth;
+  }
+
+  function renderDropdown(tagQuery) {
+    const tagMap = getAllTags();
+    const allTags = Object.keys(tagMap);
+    const matches = allTags.filter(t => t.startsWith(tagQuery) && t !== tagQuery);
+
+    if (matches.length === 0) { closeDropdown(); return; }
+
+    pendingTagMatches = matches.slice(0, 6);
+    tagDropdown.innerHTML = '';
+    dropSelectedIdx = -1;
+    pendingTagMatches.forEach((t, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tag-drop-item';
+      btn.type = 'button';
+      btn.dataset.tag = t;
+      btn.innerHTML = `<span class="tdi-hash">#</span>${t}<span class="tdi-count">${tagMap[t]}</span>`;
+      btn.addEventListener('mousedown', e => { e.preventDefault(); applyTag(t); });
+      btn.addEventListener('touchstart', e => { e.preventDefault(); applyTag(t); }, { passive: false });
+      tagDropdown.appendChild(btn);
+    });
+    tagDropdown.classList.add('open');
+  }
+
+  // Use 'input' event — works reliably on Gboard/Android
+  newInput.addEventListener('input', () => {
+    const val = newInput.value;
+
+    // Gboard Enter inserts '\n' — intercept when dropdown is open
+    if (val.includes('\n')) {
+      if (pendingTagMatches.length > 0) {
+        // Apply first suggestion
+        newInput.value = val.replace(/\n/g, '');
+        applyTag(pendingTagMatches[0]);
+      } else {
+        // No dropdown — treat as add note
+        newInput.value = val.replace(/\n/g, '');
+        handleAdd();
+      }
+      return;
+    }
+
+    // Auto-add space before # if previous char is not a space or start
+    const hashMatch = val.match(/([^\s])#([\wÀ-ỹà-ỹ]*)$/i);
+    if (hashMatch) {
+      const fixed = val.replace(/([^\s])#([\wÀ-ỹà-ỹ]*)$/, '$1 #$2');
+      newInput.value = fixed;
+    }
+
+    const q = getTagQuery(newInput.value);
+    if (q !== null) {
+      renderDropdown(q);
+    } else {
+      closeDropdown();
+    }
+  });
+
+  // Close on blur (with small delay so tap on item registers first)
+  newInput.addEventListener('blur', () => setTimeout(closeDropdown, 150));
+
+  // Search
+  const searchInput = document.getElementById('searchInput');
+  const clearBtn = document.getElementById('clearSearch');
+  searchInput.addEventListener('input', () => {
+    clearBtn.classList.toggle('visible', !!searchInput.value);
+    if (editingId) editingId = null;
+    render();
+  });
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = ''; clearBtn.classList.remove('visible'); searchInput.focus(); render();
+  });
+
+  // Sort
+  document.getElementById('sortBtn').addEventListener('click', () => {
+    sortNewest = !sortNewest;
+    document.getElementById('sortBtn').textContent = sortNewest ? '↕ Mới nhất' : '↕ Cũ nhất';
+    render();
+  });
+
+  // Click outside → save
+  document.addEventListener('click', e => {
+    if (!editingId) return;
+    if (!e.target.closest('.note-row')) saveEdit(editingId);
+  });
+
+  // ── RANDOM FILTER MODAL ──
+  let modalTempSelected = new Set();
+
+  function openRandomModal() {
+    const tagMap = getAllTags();
+    const allTags = Object.keys(tagMap).sort();
+    const listEl = document.getElementById('modalTagList');
+    listEl.innerHTML = '';
+
+    if (allTags.length === 0) {
+      listEl.innerHTML = '<div class="modal-empty">Chưa có tag nào.</div>';
+    } else {
+      modalTempSelected = randomAllowedTags ? new Set(randomAllowedTags) : new Set();
+      allTags.forEach(t => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'modal-tag-chip' + (modalTempSelected.has(t) ? ' on' : '');
+        chip.dataset.tag = t;
+        chip.innerHTML = `<span class="chip-check">✓</span>#${t} <span style="opacity:.45;font-size:.65rem">${tagMap[t]}</span>`;
+        chip.addEventListener('click', () => {
+          if (modalTempSelected.has(t)) { modalTempSelected.delete(t); chip.classList.remove('on'); }
+          else { modalTempSelected.add(t); chip.classList.add('on'); }
+        });
+        listEl.appendChild(chip);
+      });
+    }
+
+    document.getElementById('randomModal').classList.add('open');
+  }
+
+  document.getElementById('modalCancel').addEventListener('click', () => {
+    document.getElementById('randomModal').classList.remove('open');
+  });
+
+  document.getElementById('randomModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('randomModal'))
+      document.getElementById('randomModal').classList.remove('open');
+  });
+
+  document.getElementById('modalSelectAll').addEventListener('click', () => {
+    const chips = document.querySelectorAll('.modal-tag-chip');
+    const allOn = [...chips].every(c => c.classList.contains('on'));
+    chips.forEach(c => {
+      if (allOn) { c.classList.remove('on'); modalTempSelected.delete(c.dataset.tag); }
+      else { c.classList.add('on'); modalTempSelected.add(c.dataset.tag); }
+    });
+    document.getElementById('modalSelectAll').textContent = allOn ? 'Tất cả' : 'Bỏ hết';
+  });
+
+  document.getElementById('modalSave').addEventListener('click', () => {
+    randomAllowedTags = modalTempSelected.size > 0 ? new Set(modalTempSelected) : null;
+    saveRandomTags();
+    document.getElementById('randomModal').classList.remove('open');
+    render();
+  });
+
+  load(); render(); newInput.focus();
+</script>
+</body>
+</html>
