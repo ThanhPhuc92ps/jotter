@@ -761,33 +761,6 @@
     font-weight: 500;
   }
   .modal-btn.danger:hover { background: #ff7070; }
-
-  /* ── HIDDEN BRACKET CONTENT ── */
-  .hidden-bracket {
-    color: transparent;
-    background: var(--surface2);
-    border-radius: 3px;
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.2s, background 0.2s;
-    padding: 0 2px;
-    border: 1px solid var(--border);
-    font-size: 0.8em;
-    letter-spacing: 0;
-  }
-  .hidden-bracket::before {
-    content: '[…]';
-    color: var(--text-dim);
-    font-size: 0.85em;
-  }
-  .hidden-bracket.revealed {
-    color: var(--text);
-    background: rgba(200,240,96,0.07);
-    border-color: rgba(200,240,96,0.3);
-  }
-  .hidden-bracket.revealed::before {
-    content: none;
-  }
 </style>
 </head>
 <body>
@@ -902,10 +875,6 @@
   function renderTagHighlight(text, searchQ) {
     // Escape first
     let out = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    // Wrap [bracket content] in hidden spans (before tag/search highlighting)
-    out = out.replace(/\[([^\]]+)\]/g, (match, inner) => {
-      return `<span class="hidden-bracket" title="Nhấp để hiện/ẩn" data-content="${inner.replace(/"/g,'&quot;')}">${inner}</span>`;
-    });
     // Highlight #tags
     out = out.replace(/#([\wÀ-ỹà-ỹ]+)/gi, '<span class="inline-tag">$1</span>');
     // Highlight search query on top
@@ -1238,14 +1207,6 @@
 
   // Delegated list events
   document.getElementById('notesList').addEventListener('click', e => {
-    // Toggle hidden bracket content
-    const bracket = e.target.closest('.hidden-bracket');
-    if (bracket) {
-      bracket.classList.toggle('revealed');
-      e.stopPropagation();
-      return;
-    }
-
     // Tag chip click → filter by tag
     const tagChip = e.target.closest('.row-tag');
     if (tagChip) {
