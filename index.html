@@ -841,15 +841,21 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const STORAGE_KEY = 'ghi_chu_app_v1';
+  // ── SUPABASE CONFIG ── Điền thông tin của bạn vào đây
+  const SUPABASE_URL = 'https://ssidyqsvmskamnjtairj.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzaWR5cXN2bXNrYW1uanRhaXJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NzM3MzksImV4cCI6MjA5NzA0OTczOX0.yesB2TJzj46DfRAabGwuWnKykrYKxuyHktmJfQk5Uy0';
+
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   const RANDOM_TAGS_KEY = 'ghi_chu_random_tags_v1';
   let notes = [];
   let sortNewest = true;
   let editingId = null;
   let activeTag = null;
-  let randomAllowedTags = null; // null = all, [] = all, Set of tag names = filtered
-  let currentSpotlightId = null; // track which note is spotlighted
+  let randomAllowedTags = null;
+  let currentSpotlightId = null;
 
   const PARTICLE_COLORS = ['#c8f060','#f0e060','#60f0c8','#f06090','#60c8f0','#f0a060','#a060f0'];
 
@@ -869,15 +875,12 @@
     notes.forEach(n => {
       extractTags(n.text).forEach(t => { map[t] = (map[t] || 0) + 1; });
     });
-    return map; // { tagName: count }
+    return map;
   }
 
   function renderTagHighlight(text, searchQ) {
-    // Escape first
     let out = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    // Highlight #tags
     out = out.replace(/#([\wÀ-ỹà-ỹ]+)/gi, '<span class="inline-tag">$1</span>');
-    // Highlight search query on top
     if (searchQ) {
       const eq = searchQ.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
       out = out.replace(new RegExp(eq,'gi'), m => `<em>${m}</em>`);
@@ -885,15 +888,60 @@
     return out;
   }
 
-  function load() {
-    try { const r = localStorage.getItem(STORAGE_KEY); if (r) notes = JSON.parse(r); }
-    catch { notes = []; }
+  // ── SUPABASE: LOAD ──
+  async function load() {
+    try {
+      const { data, error } = await _supabase
+        .from('notes')
+        .select('id, text, ts')
+        .order('ts', { ascending: false });
+      if (error) throw error;
+      notes = data || [];
+    } catch (e) {
+      console.error('Lỗi tải ghi chú:', e.message);
+      notes = [];
+    }
     try {
       const r = localStorage.getItem(RANDOM_TAGS_KEY);
       randomAllowedTags = r ? new Set(JSON.parse(r)) : null;
     } catch { randomAllowedTags = null; }
   }
-  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); }
+
+  // ── SUPABASE: SAVE (upsert note) ──
+  async function save() {
+    // No-op: individual operations handle their own DB calls
+  }
+
+  // ── SUPABASE: INSERT NOTE ──
+  async function dbInsert(note) {
+    const { error } = await _supabase.from('notes').insert({
+      id: note.id,
+      text: note.text,
+      ts: note.ts
+    });
+    if (error) console.error('Lỗi thêm ghi chú:', error.message);
+  }
+
+  // ── SUPABASE: UPDATE NOTE ──
+  async function dbUpdate(id, text, ts) {
+    const { error } = await _supabase.from('notes')
+      .update({ text, ts })
+      .eq('id', id);
+    if (error) console.error('Lỗi cập nhật ghi chú:', error.message);
+  }
+
+  // ── SUPABASE: DELETE NOTE ──
+  async function dbDelete(id) {
+    const { error } = await _supabase.from('notes').delete().eq('id', id);
+    if (error) console.error('Lỗi xóa ghi chú:', error.message);
+  }
+
+  // ── SUPABASE: DELETE MANY ──
+  async function dbDeleteMany(ids) {
+    const { error } = await _supabase.from('notes').delete().in('id', ids);
+    if (error) console.error('Lỗi xóa nhiều ghi chú:', error.message);
+  }
+
   function saveRandomTags() {
     if (!randomAllowedTags || randomAllowedTags.size === 0) {
       localStorage.removeItem(RANDOM_TAGS_KEY);
@@ -1127,8 +1175,9 @@
   function addNote(text) {
     text = text.trim();
     if (!text) return false;
-    notes.push({ id: genId(), text, ts: Date.now() });
-    save();
+    const note = { id: genId(), text, ts: Date.now() };
+    notes.push(note);
+    dbInsert(note);
     render();
     return true;
   }
@@ -1137,21 +1186,21 @@
     const row = document.querySelector(`.note-row[data-id="${id}"]`);
     if (row) {
       row.classList.add('removing');
-      setTimeout(() => { notes = notes.filter(n => n.id !== id); save(); render(); }, 200);
-    } else { notes = notes.filter(n => n.id !== id); save(); render(); }
+      setTimeout(() => { notes = notes.filter(n => n.id !== id); dbDelete(id); render(); }, 200);
+    } else { notes = notes.filter(n => n.id !== id); dbDelete(id); render(); }
   }
 
   function deleteByTag(tag) {
     const toDelete = notes.filter(n => extractTags(n.text).includes(tag));
-    // Animate all matching rows then delete
     toDelete.forEach(n => {
       const row = document.querySelector(`.note-row[data-id="${n.id}"]`);
       if (row) row.classList.add('removing');
     });
     setTimeout(() => {
+      const ids = toDelete.map(n => n.id);
       notes = notes.filter(n => !extractTags(n.text).includes(tag));
       activeTag = null;
-      save();
+      dbDeleteMany(ids);
       render();
     }, 220);
   }
@@ -1195,10 +1244,11 @@
     if (t) {
       const n = notes.find(n => n.id === id);
       if (n) {
+        const changed = t !== editingOriginal;
         n.text = t;
-        if (t !== editingOriginal) n.ts = Date.now();
+        if (changed) n.ts = Date.now();
+        dbUpdate(id, n.text, n.ts);
       }
-      save();
     }
     editingId = null; editingOriginal = null; render();
   }
@@ -1433,7 +1483,7 @@
     render();
   });
 
-  load(); render(); newInput.focus();
+  load().then(() => { render(); newInput.focus(); });
 </script>
 </body>
 </html>
